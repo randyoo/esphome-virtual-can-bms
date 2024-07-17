@@ -45,7 +45,8 @@ void VirtualCanBms::send_frame_0x0351_() {
     return;
   }
 
-  message.ChargeVoltage = (charge_voltage * 10.0f);                   // 41V * 10 ... 63V * 10 = 410...630
+  //message.ChargeVoltage = (charge_voltage * 10.0f);                   // 41V * 10 ... 63V * 10 = 410...630
+  message.ChargeVoltage = ((charge_voltage + 1) * 10.0f);                   // 41V * 10 ... 63V * 10 = 410...630
   message.MaxChargingCurrent = (charge_current_limit * 10.0f);        // 0A * 10 ... 1200A * 10 = 0...12000
   message.MaxDischargingCurrent = (discharge_current_limit * 10.0f);  // 0A * 10 ... 1200A * 10 = 0...12000
   message.DischargeVoltageLimit = (discharge_voltage_limit * 10.0f);  // 41V * 10 ... 48V * 10 = 410...480

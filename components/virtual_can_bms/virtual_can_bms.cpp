@@ -53,8 +53,8 @@ void VirtualCanBms::send_frame_0x0351_() {
   message.DischargeVoltageLimit = (discharge_voltage_limit * 10.0f);  // 41V * 10 ... 48V * 10 = 410...480
 
   auto *ptr = reinterpret_cast<uint8_t *>(&message);
-  ESP_LOGI(TAG, "xxxxxxxx Charge Voltage = %d xxxxxxxxx", charge_voltage);
-  ESP_LOGI(TAG, "xxxxxxxx send 0x0351 hex %x %x %x %x %x %x %x %x xxxxxxxxx", ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], ptr[6], ptr[7]);
+  //ESP_LOGI(TAG, "xxxxxxxx Charge Voltage = %d xxxxxxxxx", charge_voltage);
+  //ESP_LOGI(TAG, "xxxxxxxx send 0x0351 hex %x %x %x %x %x %x %x %x xxxxxxxxx", ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], ptr[6], ptr[7]);
   this->canbus->send_data(0x0351, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
 }
 

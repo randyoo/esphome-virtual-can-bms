@@ -44,9 +44,10 @@ void VirtualCanBms::send_frame_0x0351_() {
     ESP_LOGW(TAG, "One of the required sensor states is NaN. Unable to populate 0x0351 frame. Skipped");
     return;
   }
-
-  // quick and dirty fix to get SI to "take" the desired charge voltage, otherwise indicates 1V too low
-  message.ChargeVoltage = ((charge_voltage + 1) * 10.0f);                   // 41V * 10 ... 63V * 10 = 410...630
+  // sometimes (higher SoC?), SI reflects target voltage 1V lower than BMS transmitted value.
+  // a quick and dirty fix to get SI to "take" the desired charge voltage:
+  // message.ChargeVoltage = ((charge_voltage + 1) * 10.0f);
+  message.ChargeVoltage = ((charge_voltage) * 10.0f);                   // 41V * 10 ... 63V * 10 = 410...630
   message.MaxChargingCurrent = (charge_current_limit * 10.0f);        // 0A * 10 ... 1200A * 10 = 0...12000
   message.MaxDischargingCurrent = (discharge_current_limit * 10.0f);  // 0A * 10 ... 1200A * 10 = 0...12000
   message.DischargeVoltageLimit = (discharge_voltage_limit * 10.0f);  // 41V * 10 ... 48V * 10 = 410...480

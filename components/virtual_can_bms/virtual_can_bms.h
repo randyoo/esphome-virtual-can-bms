@@ -87,6 +87,9 @@ class VirtualCanBms : public PollingComponent {
   void set_battery_temperature_sensor(sensor::Sensor *battery_temperature_sensor) {
     battery_temperature_sensor_ = battery_temperature_sensor;
   }
+  void set_can_frame_received_sensor(binary_sensor::BinarySensor *can_frame_received_sensor) {
+    can_frame_received_sensor_ = can_frame_received_sensor;
+  }
 
   void dump_config() override;
 
@@ -107,6 +110,7 @@ class VirtualCanBms : public PollingComponent {
   sensor::Sensor *battery_voltage_sensor_;
   sensor::Sensor *battery_current_sensor_;
   sensor::Sensor *battery_temperature_sensor_;
+  binary_sensor::BinarySensor *can_frame_received_sensor_;
 
   void send_frame_0x0351_();
   void send_frame_0x0355_();

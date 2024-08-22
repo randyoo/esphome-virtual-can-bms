@@ -17,10 +17,12 @@ void VirtualCanBms::publish_state_(sensor::Sensor *sensor, float value) {
 void VirtualCanBms::dump_config() { ESP_LOGCONFIG(TAG, "VirtualCanBms:"); }
 
 void VirtualCanBms::update() {
-  this->send_frame_0x0351_();
-  this->send_frame_0x0355_();
-  this->send_frame_0x0356_();
-  this->send_frame_0x035a_();
+  if (this->can_frame_received_sensor_->state) {
+    this->send_frame_0x0351_();
+    this->send_frame_0x0355_();
+    this->send_frame_0x0356_();
+    this->send_frame_0x035a_();
+  }
 }
 
 // Required

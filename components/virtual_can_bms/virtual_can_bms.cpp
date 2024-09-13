@@ -7,6 +7,10 @@ namespace virtual_can_bms {
 
 static const char *const TAG = "virtual_can_bms";
 
+void VirtualCanBms::setup() {
+  this->last_frame_time_ = millis();
+}
+
 void VirtualCanBms::publish_state_(sensor::Sensor *sensor, float value) {
   if (sensor == nullptr)
     return;
@@ -16,14 +20,39 @@ void VirtualCanBms::publish_state_(sensor::Sensor *sensor, float value) {
 
 void VirtualCanBms::dump_config() { ESP_LOGCONFIG(TAG, "VirtualCanBms:"); }
 
-void VirtualCanBms::update() {
-  this->send_frame_0x0351_();
-  this->send_frame_0x0355_();
-  this->send_frame_0x0356_();
-  this->send_frame_0x035a_();
+void VirtualCanBms::loop() {
+  uint32_t now = millis();
+
+  switch (this->current_state_) {
+    case State::SEND_0X0351:
+      this->send_frame_0x0351_();
+      this->current_state_ = State::SEND_0X0355;
+      break;
+
+    case State::SEND_0X0355:
+      this->send_frame_0x0355_();
+      this->current_state_ = State::SEND_0X0356;
+      break;
+
+    case State::SEND_0X0356:
+      this->send_frame_0x0356_();
+      this->current_state_ = State::SEND_0X035A;
+      break;
+
+    case State::SEND_0X035A:
+      this->send_frame_0x035a_();
+      this->current_state_ = State::IDLE;
+      this->last_frame_time_ = now;
+      break;
+
+    case State::IDLE:
+      if (now - this->last_frame_time_ >= FRAME_INTERVAL_MS) {
+        this->current_state_ = State::SEND_0X0351;
+      }
+      break;
+  }
 }
 
-// Required
 void VirtualCanBms::send_frame_0x0351_() {
   static SmaCanMessage0x0351 message;
 
@@ -44,21 +73,16 @@ void VirtualCanBms::send_frame_0x0351_() {
     ESP_LOGW(TAG, "One of the required sensor states is NaN. Unable to populate 0x0351 frame. Skipped");
     return;
   }
-  // sometimes (higher SoC?), SI reflects target voltage 1V lower than BMS transmitted value.
-  // a quick and dirty fix to get SI to "take" the desired charge voltage:
-  // message.ChargeVoltage = ((charge_voltage + 1) * 10.0f);
-  message.ChargeVoltage = ((charge_voltage) * 10.0f);                   // 41V * 10 ... 63V * 10 = 410...630
-  message.MaxChargingCurrent = (charge_current_limit * 10.0f);        // 0A * 10 ... 1200A * 10 = 0...12000
-  message.MaxDischargingCurrent = (discharge_current_limit * 10.0f);  // 0A * 10 ... 1200A * 10 = 0...12000
-  message.DischargeVoltageLimit = (discharge_voltage_limit * 10.0f);  // 41V * 10 ... 48V * 10 = 410...480
+
+  message.ChargeVoltage = ((charge_voltage) * 10.0f);
+  message.MaxChargingCurrent = (charge_current_limit * 10.0f);
+  message.MaxDischargingCurrent = (discharge_current_limit * 10.0f);
+  message.DischargeVoltageLimit = (discharge_voltage_limit * 10.0f);
 
   auto *ptr = reinterpret_cast<uint8_t *>(&message);
-  //ESP_LOGI(TAG, "xxxxxxxx Charge Voltage = %d xxxxxxxxx", charge_voltage);
-  //ESP_LOGI(TAG, "xxxxxxxx send 0x0351 hex %x %x %x %x %x %x %x %x xxxxxxxxx", ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], ptr[6], ptr[7]);
   this->canbus->send_data(0x0351, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
 }
 
-// Required
 void VirtualCanBms::send_frame_0x0355_() {
   static SmaCanMessage0x0355 message;
 
@@ -80,19 +104,17 @@ void VirtualCanBms::send_frame_0x0355_() {
     return;
   }
 
-  message.StateOfCharge = state_of_charge;                          // 0%...100%
-  message.StateOfHealth = state_of_health;                          // 0%...100%
-  message.StateOfChargeHighRes = (hires_state_of_charge * 100.0f);  // 0.00%...100.00%
+  message.StateOfCharge = state_of_charge;
+  message.StateOfHealth = state_of_health;
+  message.StateOfChargeHighRes = (hires_state_of_charge * 100.0f);
 
   auto *ptr = reinterpret_cast<uint8_t *>(&message);
   this->canbus->send_data(0x0355, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
 }
 
-// Optional
 void VirtualCanBms::send_frame_0x0356_() {
   static SmaCanMessage0x0356 message;
 
-  // If all sensors are unavailable it's on purpose
   if (this->battery_voltage_sensor_ == nullptr && this->battery_current_sensor_ == nullptr &&
       this->battery_temperature_sensor_ == nullptr) {
     ESP_LOGVV(TAG, "Sensor battery_voltage_id, battery_current_id and battery_temperature_id not configured. "
@@ -100,7 +122,6 @@ void VirtualCanBms::send_frame_0x0356_() {
     return;
   }
 
-  // If one of the sensors is missing it's a fault
   if (this->battery_voltage_sensor_ == nullptr || this->battery_current_sensor_ == nullptr ||
       this->battery_temperature_sensor_ == nullptr) {
     ESP_LOGW(TAG, "One of the required sensors (battery_voltage_id, battery_current_id, battery_temperature_id) "
@@ -116,15 +137,14 @@ void VirtualCanBms::send_frame_0x0356_() {
     return;
   }
 
-  message.BatteryVoltage = (battery_voltage * 100.0f);         // V
-  message.BatteryCurrent = (battery_current * 10.0f);          // A
-  message.BatteryTemperature = (battery_temperature * 10.0f);  // °C
+  message.BatteryVoltage = (battery_voltage * 100.0f);
+  message.BatteryCurrent = (battery_current * 10.0f);
+  message.BatteryTemperature = (battery_temperature * 10.0f);
 
   auto *ptr = reinterpret_cast<uint8_t *>(&message);
   this->canbus->send_data(0x0356, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
 }
 
-// Required
 void VirtualCanBms::send_frame_0x035a_() {
   static SmaCanMessage0x035A message;
 

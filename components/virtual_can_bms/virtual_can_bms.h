@@ -8,27 +8,27 @@ namespace esphome {
 namespace virtual_can_bms {
 
 struct SmaCanMessage0x0351 {
-  uint16_t ChargeVoltage;          // U16
-  int16_t MaxChargingCurrent;      // S16
-  int16_t MaxDischargingCurrent;   // S16
-  uint16_t DischargeVoltageLimit;  // U16
+  uint16_t ChargeVoltage;
+  int16_t MaxChargingCurrent;
+  int16_t MaxDischargingCurrent;
+  uint16_t DischargeVoltageLimit;
 };
 
 struct SmaCanMessage0x0355 {
-  uint16_t StateOfCharge;         // U16
-  uint16_t StateOfHealth;         // U16
-  uint16_t StateOfChargeHighRes;  // U16
+  uint16_t StateOfCharge;
+  uint16_t StateOfHealth;
+  uint16_t StateOfChargeHighRes;
 };
 
 struct SmaCanMessage0x0356 {
-  int16_t BatteryVoltage;      // S16
-  int16_t BatteryCurrent;      // S16
-  int16_t BatteryTemperature;  // S16
+  int16_t BatteryVoltage;
+  int16_t BatteryCurrent;
+  int16_t BatteryTemperature;
 };
 
 struct SmaCanMessage0x035A {
-  uint32_t AlarmBitmask;    // 32 Bits
-  uint32_t WarningBitmask;  // 32 Bits
+  uint32_t AlarmBitmask;
+  uint32_t WarningBitmask;
 };
 
 struct SmaCanMessage0x035E {
@@ -47,13 +47,13 @@ struct SmaCanMessage0x0370 {
 };
 
 struct SmaCanMessage0x0373 {
-  uint16_t MinCellvoltage;  // v * 1000.0f
-  uint16_t MaxCellvoltage;  // v * 1000.0f
-  uint16_t MinTemperature;  // v * 273.15f
-  uint16_t MaxTemperature;  // v * 273.15f
+  uint16_t MinCellvoltage;
+  uint16_t MaxCellvoltage;
+  uint16_t MinTemperature;
+  uint16_t MaxTemperature;
 };
 
-class VirtualCanBms : public PollingComponent {
+class VirtualCanBms : public Component {
  public:
   void set_canbus(canbus::Canbus *canbus) { this->canbus = canbus; }
 
@@ -89,8 +89,8 @@ class VirtualCanBms : public PollingComponent {
   }
 
   void dump_config() override;
-
-  void update() override;
+  void loop() override;
+  void setup() override;
 
   float get_setup_priority() const override { return setup_priority::DATA; }
 
@@ -113,6 +113,18 @@ class VirtualCanBms : public PollingComponent {
   void send_frame_0x0356_();
   void send_frame_0x035a_();
   void publish_state_(sensor::Sensor *sensor, float value);
+
+  enum class State {
+    SEND_0X0351,
+    SEND_0X0355,
+    SEND_0X0356,
+    SEND_0X035A,
+    IDLE
+  };
+
+  State current_state_{State::SEND_0X0351};
+  uint32_t last_frame_time_{0};
+  static constexpr uint32_t FRAME_INTERVAL_MS = 200;
 };
 
 }  // namespace virtual_can_bms

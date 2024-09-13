@@ -31,28 +31,6 @@ struct SmaCanMessage0x035A {
   uint32_t WarningBitmask;
 };
 
-struct SmaCanMessage0x035E {
-  char Model[8];
-};
-
-struct SmaCanMessage0x035F {
-  uint16_t CellChemistry;
-  uint8_t HardwareVersion[2];
-  uint16_t NominalCapacity;
-  uint8_t SoftwareVersion[2];
-};
-
-struct SmaCanMessage0x0370 {
-  char Manufacturer[8];
-};
-
-struct SmaCanMessage0x0373 {
-  uint16_t MinCellvoltage;
-  uint16_t MaxCellvoltage;
-  uint16_t MinTemperature;
-  uint16_t MaxTemperature;
-};
-
 class VirtualCanBms : public Component {
  public:
   void set_canbus(canbus::Canbus *canbus) { this->canbus = canbus; }
@@ -89,42 +67,52 @@ class VirtualCanBms : public Component {
   }
 
   void dump_config() override;
-  void loop() override;
   void setup() override;
+  void loop() override;
 
   float get_setup_priority() const override { return setup_priority::DATA; }
 
   canbus::Canbus *canbus;
 
  protected:
-  sensor::Sensor *charge_voltage_sensor_;
-  sensor::Sensor *charge_current_limit_sensor_;
-  sensor::Sensor *discharge_current_limit_sensor_;
-  sensor::Sensor *discharge_voltage_limit_sensor_;
-  sensor::Sensor *state_of_charge_sensor_;
-  sensor::Sensor *state_of_health_sensor_;
-  sensor::Sensor *hires_state_of_charge_sensor_;
-  sensor::Sensor *battery_voltage_sensor_;
-  sensor::Sensor *battery_current_sensor_;
-  sensor::Sensor *battery_temperature_sensor_;
+  void register_sensor_callbacks_();
 
   void send_frame_0x0351_();
   void send_frame_0x0355_();
   void send_frame_0x0356_();
   void send_frame_0x035a_();
-  void publish_state_(sensor::Sensor *sensor, float value);
 
-  enum class State {
-    SEND_0X0351,
-    SEND_0X0355,
-    SEND_0X0356,
-    SEND_0X035A,
-    IDLE
-  };
+  void build_frame_0x0351_(SmaCanMessage0x0351 &message);
+  void build_frame_0x0355_(SmaCanMessage0x0355 &message);
+  void build_frame_0x0356_(SmaCanMessage0x0356 &message);
+  void build_frame_0x035a_(SmaCanMessage0x035A &message);
 
-  State current_state_{State::SEND_0X0351};
+  sensor::Sensor *charge_voltage_sensor_{nullptr};
+  sensor::Sensor *charge_current_limit_sensor_{nullptr};
+  sensor::Sensor *discharge_current_limit_sensor_{nullptr};
+  sensor::Sensor *discharge_voltage_limit_sensor_{nullptr};
+  sensor::Sensor *state_of_charge_sensor_{nullptr};
+  sensor::Sensor *state_of_health_sensor_{nullptr};
+  sensor::Sensor *hires_state_of_charge_sensor_{nullptr};
+  sensor::Sensor *battery_voltage_sensor_{nullptr};
+  sensor::Sensor *battery_current_sensor_{nullptr};
+  sensor::Sensor *battery_temperature_sensor_{nullptr};
+
+  bool sensor_0x0351_updated_{false};
+  bool sensor_0x0355_updated_{false};
+  bool sensor_0x0356_updated_{false};
+  bool sensor_0x035a_updated_{false};
+
   uint32_t last_frame_time_{0};
+  uint32_t last_mandatory_frame_time_{0};
+
+  SmaCanMessage0x0351 last_frame_0x0351_{};
+  SmaCanMessage0x0355 last_frame_0x0355_{};
+  SmaCanMessage0x0356 last_frame_0x0356_{};
+  SmaCanMessage0x035A last_frame_0x035a_{};
+
   static constexpr uint32_t FRAME_INTERVAL_MS = 200;
+  static constexpr uint32_t MANDATORY_FRAME_INTERVAL_MS = 10000;  // 10 seconds
 };
 
 }  // namespace virtual_can_bms

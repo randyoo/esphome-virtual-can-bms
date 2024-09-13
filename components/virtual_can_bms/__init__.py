@@ -39,23 +39,21 @@ VirtualCanBms = virtual_can_bms_ns.class_(
     canbus.CanbusComponent,
 )
 
-CONFIG_SCHEMA = cv.All(
-    cv.Schema(
-        {
-            cv.GenerateID(): cv.declare_id(VirtualCanBms),
-            cv.GenerateID(CONF_CANBUS_ID): cv.use_id(CanbusComponent),
-            cv.Required(CONF_CHARGE_VOLTAGE_ID): cv.use_id(sensor.Sensor),
-            cv.Required(CONF_CHARGE_CURRENT_LIMIT_ID): cv.use_id(sensor.Sensor),
-            cv.Required(CONF_DISCHARGE_CURRENT_LIMIT_ID): cv.use_id(sensor.Sensor),
-            cv.Required(CONF_DISCHARGE_VOLTAGE_LIMIT_ID): cv.use_id(sensor.Sensor),
-            cv.Required(CONF_STATE_OF_CHARGE_ID): cv.use_id(sensor.Sensor),
-            cv.Required(CONF_STATE_OF_HEALTH_ID): cv.use_id(sensor.Sensor),
-            cv.Optional(CONF_HIRES_STATE_OF_CHARGE_ID): cv.use_id(sensor.Sensor),
-            cv.Optional(CONF_BATTERY_VOLTAGE_ID): cv.use_id(sensor.Sensor),
-            cv.Optional(CONF_BATTERY_CURRENT_ID): cv.use_id(sensor.Sensor),
-            cv.Optional(CONF_BATTERY_TEMPERATURE_ID): cv.use_id(sensor.Sensor),
-        }
-    ).extend(cv.polling_component_schema("1s")),
+CONFIG_SCHEMA = cv.Schema(
+    {
+        cv.GenerateID(): cv.declare_id(VirtualCanBms),
+        cv.GenerateID(CONF_CANBUS_ID): cv.use_id(CanbusComponent),
+        cv.Required(CONF_CHARGE_VOLTAGE_ID): cv.use_id(sensor.Sensor),
+        cv.Required(CONF_CHARGE_CURRENT_LIMIT_ID): cv.use_id(sensor.Sensor),
+        cv.Required(CONF_DISCHARGE_CURRENT_LIMIT_ID): cv.use_id(sensor.Sensor),
+        cv.Required(CONF_DISCHARGE_VOLTAGE_LIMIT_ID): cv.use_id(sensor.Sensor),
+        cv.Required(CONF_STATE_OF_CHARGE_ID): cv.use_id(sensor.Sensor),
+        cv.Required(CONF_STATE_OF_HEALTH_ID): cv.use_id(sensor.Sensor),
+        cv.Optional(CONF_HIRES_STATE_OF_CHARGE_ID): cv.use_id(sensor.Sensor),
+        cv.Optional(CONF_BATTERY_VOLTAGE_ID): cv.use_id(sensor.Sensor),
+        cv.Optional(CONF_BATTERY_CURRENT_ID): cv.use_id(sensor.Sensor),
+        cv.Optional(CONF_BATTERY_TEMPERATURE_ID): cv.use_id(sensor.Sensor),
+    }
 )
 
 

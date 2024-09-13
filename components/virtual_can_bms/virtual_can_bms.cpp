@@ -8,14 +8,33 @@ namespace virtual_can_bms {
 static const char *const TAG = "virtual_can_bms";
 
 void VirtualCanBms::setup() {
-  this->last_frame_time_ = millis();
+  this->last_mandatory_frame_time_ = millis();
+  this->register_sensor_callbacks_();
 }
 
-void VirtualCanBms::publish_state_(sensor::Sensor *sensor, float value) {
-  if (sensor == nullptr)
-    return;
+void VirtualCanBms::register_sensor_callbacks_() {
+  if (this->charge_voltage_sensor_ != nullptr)
+    this->charge_voltage_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0351_updated_ = true; });
+  if (this->charge_current_limit_sensor_ != nullptr)
+    this->charge_current_limit_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0351_updated_ = true; });
+  if (this->discharge_current_limit_sensor_ != nullptr)
+    this->discharge_current_limit_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0351_updated_ = true; });
+  if (this->discharge_voltage_limit_sensor_ != nullptr)
+    this->discharge_voltage_limit_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0351_updated_ = true; });
 
-  sensor->publish_state(value);
+  if (this->state_of_charge_sensor_ != nullptr)
+    this->state_of_charge_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0355_updated_ = true; });
+  if (this->state_of_health_sensor_ != nullptr)
+    this->state_of_health_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0355_updated_ = true; });
+  if (this->hires_state_of_charge_sensor_ != nullptr)
+    this->hires_state_of_charge_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0355_updated_ = true; });
+
+  if (this->battery_voltage_sensor_ != nullptr)
+    this->battery_voltage_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0356_updated_ = true; });
+  if (this->battery_current_sensor_ != nullptr)
+    this->battery_current_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0356_updated_ = true; });
+  if (this->battery_temperature_sensor_ != nullptr)
+    this->battery_temperature_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0356_updated_ = true; });
 }
 
 void VirtualCanBms::dump_config() { ESP_LOGCONFIG(TAG, "VirtualCanBms:"); }
@@ -23,44 +42,82 @@ void VirtualCanBms::dump_config() { ESP_LOGCONFIG(TAG, "VirtualCanBms:"); }
 void VirtualCanBms::loop() {
   uint32_t now = millis();
 
-  switch (this->current_state_) {
-    case State::SEND_0X0351:
-      this->send_frame_0x0351_();
-      this->current_state_ = State::SEND_0X0355;
-      break;
+  if (now - this->last_frame_time_ < FRAME_INTERVAL_MS) {
+    return;  // Respect minimum interval between frames
+  }
 
-    case State::SEND_0X0355:
-      this->send_frame_0x0355_();
-      this->current_state_ = State::SEND_0X0356;
-      break;
+  // Priority order: 0x0351, 0x0355, 0x0356, 0x035A
+  if (this->sensor_0x0351_updated_ || (now - this->last_mandatory_frame_time_ >= MANDATORY_FRAME_INTERVAL_MS)) {
+    this->send_frame_0x0351_();
+    this->sensor_0x0351_updated_ = false;
+    this->last_mandatory_frame_time_ = now;
+    this->last_frame_time_ = now;
+    return;
+  }
 
-    case State::SEND_0X0356:
-      this->send_frame_0x0356_();
-      this->current_state_ = State::SEND_0X035A;
-      break;
+  if (this->sensor_0x0355_updated_ || (now - this->last_mandatory_frame_time_ >= MANDATORY_FRAME_INTERVAL_MS)) {
+    this->send_frame_0x0355_();
+    this->sensor_0x0355_updated_ = false;
+    this->last_mandatory_frame_time_ = now;
+    this->last_frame_time_ = now;
+    return;
+  }
 
-    case State::SEND_0X035A:
-      this->send_frame_0x035a_();
-      this->current_state_ = State::IDLE;
-      this->last_frame_time_ = now;
-      break;
+  if (this->sensor_0x0356_updated_) {
+    this->send_frame_0x0356_();
+    this->sensor_0x0356_updated_ = false;
+    this->last_frame_time_ = now;
+    return;
+  }
 
-    case State::IDLE:
-      if (now - this->last_frame_time_ >= FRAME_INTERVAL_MS) {
-        this->current_state_ = State::SEND_0X0351;
-      }
-      break;
+  if (this->sensor_0x035a_updated_) {
+    this->send_frame_0x035a_();
+    this->sensor_0x035a_updated_ = false;
+    this->last_frame_time_ = now;
+    return;
   }
 }
 
 void VirtualCanBms::send_frame_0x0351_() {
-  static SmaCanMessage0x0351 message;
+  SmaCanMessage0x0351 message;
+  this->build_frame_0x0351_(message);
+  auto *ptr = reinterpret_cast<uint8_t *>(&message);
+  this->canbus->send_data(0x0351, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
+  this->last_frame_0x0351_ = message;
+  ESP_LOGD(TAG, "Sent frame 0x0351");
+}
 
+void VirtualCanBms::send_frame_0x0355_() {
+  SmaCanMessage0x0355 message;
+  this->build_frame_0x0355_(message);
+  auto *ptr = reinterpret_cast<uint8_t *>(&message);
+  this->canbus->send_data(0x0355, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
+  this->last_frame_0x0355_ = message;
+  ESP_LOGD(TAG, "Sent frame 0x0355");
+}
+
+void VirtualCanBms::send_frame_0x0356_() {
+  SmaCanMessage0x0356 message;
+  this->build_frame_0x0356_(message);
+  auto *ptr = reinterpret_cast<uint8_t *>(&message);
+  this->canbus->send_data(0x0356, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
+  this->last_frame_0x0356_ = message;
+  ESP_LOGD(TAG, "Sent frame 0x0356");
+}
+
+void VirtualCanBms::send_frame_0x035a_() {
+  SmaCanMessage0x035A message;
+  this->build_frame_0x035a_(message);
+  auto *ptr = reinterpret_cast<uint8_t *>(&message);
+  this->canbus->send_data(0x035A, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
+  this->last_frame_0x035a_ = message;
+  ESP_LOGD(TAG, "Sent frame 0x035A");
+}
+
+void VirtualCanBms::build_frame_0x0351_(SmaCanMessage0x0351 &message) {
   if (this->charge_voltage_sensor_ == nullptr || this->charge_current_limit_sensor_ == nullptr ||
       this->discharge_current_limit_sensor_ == nullptr || this->discharge_voltage_limit_sensor_ == nullptr) {
-    ESP_LOGW(TAG,
-             "One of the required sensors (charge_voltage_id, charge_current_limit_id, discharge_current_limit_id, "
-             "discharge_voltage_limit_id) missing. Unable to populate 0x0351 frame. Skipped");
+    ESP_LOGW(TAG, "One of the required sensors for frame 0x0351 is missing");
     return;
   }
 
@@ -68,91 +125,49 @@ void VirtualCanBms::send_frame_0x0351_() {
   float charge_current_limit = this->charge_current_limit_sensor_->get_state();
   float discharge_current_limit = this->discharge_current_limit_sensor_->get_state();
   float discharge_voltage_limit = this->discharge_voltage_limit_sensor_->get_state();
-  if (std::isnan(charge_voltage) || std::isnan(charge_current_limit) || std::isnan(discharge_current_limit) ||
-      std::isnan(discharge_voltage_limit)) {
-    ESP_LOGW(TAG, "One of the required sensor states is NaN. Unable to populate 0x0351 frame. Skipped");
-    return;
-  }
 
   message.ChargeVoltage = ((charge_voltage) * 10.0f);
   message.MaxChargingCurrent = (charge_current_limit * 10.0f);
   message.MaxDischargingCurrent = (discharge_current_limit * 10.0f);
   message.DischargeVoltageLimit = (discharge_voltage_limit * 10.0f);
-
-  auto *ptr = reinterpret_cast<uint8_t *>(&message);
-  this->canbus->send_data(0x0351, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
 }
 
-void VirtualCanBms::send_frame_0x0355_() {
-  static SmaCanMessage0x0355 message;
-
+void VirtualCanBms::build_frame_0x0355_(SmaCanMessage0x0355 &message) {
   if (this->state_of_charge_sensor_ == nullptr || this->state_of_health_sensor_ == nullptr) {
-    ESP_LOGW(TAG, "One of the required sensors (state_of_charge_id, state_of_health_id) "
-                  "missing. Unable to populate 0x0355 frame. Skipped");
+    ESP_LOGW(TAG, "One of the required sensors for frame 0x0355 is missing");
     return;
-  }
-
-  float hires_state_of_charge = 65535;  // Invalid unsigned. Unused fields of used frames must set to "invalid"
-  if (this->hires_state_of_charge_sensor_ != nullptr) {
-    hires_state_of_charge = this->hires_state_of_charge_sensor_->get_state();
   }
 
   float state_of_charge = this->state_of_charge_sensor_->get_state();
   float state_of_health = this->state_of_health_sensor_->get_state();
-  if (std::isnan(state_of_charge) || std::isnan(state_of_health) || std::isnan(hires_state_of_charge)) {
-    ESP_LOGW(TAG, "One of the required sensor states is NaN. Unable to populate 0x0355 frame. Skipped");
-    return;
-  }
+  float hires_state_of_charge = this->hires_state_of_charge_sensor_ != nullptr
+                                    ? this->hires_state_of_charge_sensor_->get_state()
+                                    : 65535;  // Invalid unsigned if sensor not available
 
   message.StateOfCharge = state_of_charge;
   message.StateOfHealth = state_of_health;
   message.StateOfChargeHighRes = (hires_state_of_charge * 100.0f);
-
-  auto *ptr = reinterpret_cast<uint8_t *>(&message);
-  this->canbus->send_data(0x0355, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
 }
 
-void VirtualCanBms::send_frame_0x0356_() {
-  static SmaCanMessage0x0356 message;
-
-  if (this->battery_voltage_sensor_ == nullptr && this->battery_current_sensor_ == nullptr &&
-      this->battery_temperature_sensor_ == nullptr) {
-    ESP_LOGVV(TAG, "Sensor battery_voltage_id, battery_current_id and battery_temperature_id not configured. "
-                   "Skipping frame 0x0356");
-    return;
-  }
-
+void VirtualCanBms::build_frame_0x0356_(SmaCanMessage0x0356 &message) {
   if (this->battery_voltage_sensor_ == nullptr || this->battery_current_sensor_ == nullptr ||
       this->battery_temperature_sensor_ == nullptr) {
-    ESP_LOGW(TAG, "One of the required sensors (battery_voltage_id, battery_current_id, battery_temperature_id) "
-                  "missing. Unable to populate 0x0356 frame. Skipped");
+    ESP_LOGW(TAG, "One of the required sensors for frame 0x0356 is missing");
     return;
   }
 
   float battery_voltage = this->battery_voltage_sensor_->get_state();
   float battery_current = this->battery_current_sensor_->get_state();
   float battery_temperature = this->battery_temperature_sensor_->get_state();
-  if (std::isnan(battery_voltage) || std::isnan(battery_current) || std::isnan(battery_temperature)) {
-    ESP_LOGW(TAG, "One of the required sensor states is NaN. Unable to populate 0x0356 frame. Skipped");
-    return;
-  }
 
   message.BatteryVoltage = (battery_voltage * 100.0f);
   message.BatteryCurrent = (battery_current * 10.0f);
   message.BatteryTemperature = (battery_temperature * 10.0f);
-
-  auto *ptr = reinterpret_cast<uint8_t *>(&message);
-  this->canbus->send_data(0x0356, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
 }
 
-void VirtualCanBms::send_frame_0x035a_() {
-  static SmaCanMessage0x035A message;
-
+void VirtualCanBms::build_frame_0x035a_(SmaCanMessage0x035A &message) {
   message.AlarmBitmask = 0x00000000;
   message.WarningBitmask = 0x00000000;
-
-  auto *ptr = reinterpret_cast<uint8_t *>(&message);
-  this->canbus->send_data(0x035A, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
 }
 
 }  // namespace virtual_can_bms

@@ -84,7 +84,7 @@ void VirtualCanBms::send_frame_0x0351_() {
   auto *ptr = reinterpret_cast<uint8_t *>(&message);
   this->canbus->send_data(0x0351, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
   this->last_frame_0x0351_ = message;
-  ESP_LOGD(TAG, "Sent frame 0x0351");
+  ESP_LOGI(TAG, "Sent frame 0x0351");
 }
 
 void VirtualCanBms::send_frame_0x0355_() {
@@ -93,7 +93,7 @@ void VirtualCanBms::send_frame_0x0355_() {
   auto *ptr = reinterpret_cast<uint8_t *>(&message);
   this->canbus->send_data(0x0355, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
   this->last_frame_0x0355_ = message;
-  ESP_LOGD(TAG, "Sent frame 0x0355");
+  ESP_LOGI(TAG, "Sent frame 0x0355");
 }
 
 void VirtualCanBms::send_frame_0x0356_() {
@@ -102,7 +102,7 @@ void VirtualCanBms::send_frame_0x0356_() {
   auto *ptr = reinterpret_cast<uint8_t *>(&message);
   this->canbus->send_data(0x0356, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
   this->last_frame_0x0356_ = message;
-  ESP_LOGD(TAG, "Sent frame 0x0356");
+  ESP_LOGI(TAG, "Sent frame 0x0356");
 }
 
 void VirtualCanBms::send_frame_0x035a_() {
@@ -111,7 +111,7 @@ void VirtualCanBms::send_frame_0x035a_() {
   auto *ptr = reinterpret_cast<uint8_t *>(&message);
   this->canbus->send_data(0x035A, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
   this->last_frame_0x035a_ = message;
-  ESP_LOGD(TAG, "Sent frame 0x035A");
+  ESP_LOGI(TAG, "Sent frame 0x035A");
 }
 
 void VirtualCanBms::build_frame_0x0351_(SmaCanMessage0x0351 &message) {

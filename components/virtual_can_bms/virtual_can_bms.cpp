@@ -145,45 +145,45 @@ void VirtualCanBms::loop() {
   }
 }
 
-  void send_frame_0x0351_() {
-    SmaCanMessage0x0351 message;
-    this->build_frame_0x0351_(message);
-    auto *ptr = reinterpret_cast<uint8_t *>(&message);
-    this->canbus->send_data(0x0351, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
-    this->last_frame_0x0351_ = message;
-    this->last_frame_0x0351_time_ = millis();  // Update the timer
-    ESP_LOGI(TAG, "Sent frame 0x0351");
-  }
+void VirtualCanBms::send_frame_0x0351_() {
+  SmaCanMessage0x0351 message;
+  this->build_frame_0x0351_(message);
+  auto *ptr = reinterpret_cast<uint8_t *>(&message);
+  this->canbus->send_data(0x0351, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
+  this->last_frame_0x0351_ = message;
+  this->last_frame_0x0351_time_ = millis();  // Update the timer
+  ESP_LOGI(TAG, "Sent frame 0x0351");
+}
 
-  void send_frame_0x0355_() {
-    SmaCanMessage0x0355 message;
-    this->build_frame_0x0355_(message);
-    auto *ptr = reinterpret_cast<uint8_t *>(&message);
-    this->canbus->send_data(0x0355, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
-    this->last_frame_0x0355_ = message;
-    this->last_frame_0x0355_time_ = millis();  // Update the timer
-    ESP_LOGI(TAG, "Sent frame 0x0355");
-  }
+void VirtualCanBms::send_frame_0x0355_() {
+  SmaCanMessage0x0355 message;
+  this->build_frame_0x0355_(message);
+  auto *ptr = reinterpret_cast<uint8_t *>(&message);
+  this->canbus->send_data(0x0355, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
+  this->last_frame_0x0355_ = message;
+  this->last_frame_0x0355_time_ = millis();  // Update the timer
+  ESP_LOGI(TAG, "Sent frame 0x0355");
+}
 
-  void send_frame_0x0356_() {
-    SmaCanMessage0x0356 message;
-    this->build_frame_0x0356_(message);
-    auto *ptr = reinterpret_cast<uint8_t *>(&message);
-    this->canbus->send_data(0x0356, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
-    this->last_frame_0x0356_ = message;
-    this->last_frame_0x0356_time_ = millis();  // Update the timer
-    ESP_LOGI(TAG, "Sent frame 0x0356");
-  }
+void VirtualCanBms::send_frame_0x0356_() {
+  SmaCanMessage0x0356 message;
+  this->build_frame_0x0356_(message);
+  auto *ptr = reinterpret_cast<uint8_t *>(&message);
+  this->canbus->send_data(0x0356, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
+  this->last_frame_0x0356_ = message;
+  this->last_frame_0x0356_time_ = millis();  // Update the timer
+  ESP_LOGI(TAG, "Sent frame 0x0356");
+}
 
-  void send_frame_0x035a_() {
-    SmaCanMessage0x035A message;
-    this->build_frame_0x035a_(message);
-    auto *ptr = reinterpret_cast<uint8_t *>(&message);
-    this->canbus->send_data(0x035A, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
-    this->last_frame_0x035a_ = message;
-    this->last_frame_0x035a_time_ = millis();  // Update the timer
-    ESP_LOGI(TAG, "Sent frame 0x035A");
-  }
+void VirtualCanBms::send_frame_0x035a_() {
+  SmaCanMessage0x035A message;
+  this->build_frame_0x035a_(message);
+  auto *ptr = reinterpret_cast<uint8_t *>(&message);
+  this->canbus->send_data(0x035A, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
+  this->last_frame_0x035a_ = message;
+  this->last_frame_0x035a_time_ = millis();  // Update the timer
+  ESP_LOGI(TAG, "Sent frame 0x035A");
+}
 
 void VirtualCanBms::build_frame_0x0351_(SmaCanMessage0x0351 &message) {
   if (this->charge_voltage_sensor_ == nullptr || this->charge_current_limit_sensor_ == nullptr ||

@@ -104,11 +104,9 @@ void VirtualCanBms::loop() {
 
   bool mandatory_update = (now - this->last_mandatory_frame_time_ >= MANDATORY_FRAME_INTERVAL_MS);
 
-  // Priority order: 0x0351, 0x0355, 0x0356, 0x035A
   if (this->sensor_0x0351_updated_ || mandatory_update) {
     this->send_frame_0x0351_();
     this->sensor_0x0351_updated_ = false;
-    this->last_mandatory_frame_time_ = now;
     this->last_frame_time_ = now;
     return;
   }
@@ -119,21 +117,15 @@ void VirtualCanBms::loop() {
     this->last_frame_time_ = now;
     return;
   }
-  if (this->sensor_0x0356_updated_ || mandatory_update) {
+  if (this->sensor_0x0356_updated_) {
     this->send_frame_0x0356_();
     this->sensor_0x0356_updated_ = false;
-    if (mandatory_update) {
-      this->last_mandatory_frame_time_ = now;
-    }
     this->last_frame_time_ = now;
     return;
   }
-  if (this->sensor_0x035a_updated_ || mandatory_update) {
+  if (this->sensor_0x035a_updated_) {
     this->send_frame_0x035a_();
     this->sensor_0x035a_updated_ = false;
-    if (mandatory_update) {
-      this->last_mandatory_frame_time_ = now;
-    }
     this->last_frame_time_ = now;
     return;
   }

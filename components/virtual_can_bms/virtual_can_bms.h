@@ -115,8 +115,8 @@ class VirtualCanBms : public Component {
   SmaCanMessage0x0356 last_frame_0x0356_{};
   SmaCanMessage0x035A last_frame_0x035a_{};
 
-  static constexpr uint32_t FRAME_INTERVAL_MS = 200;
-  static constexpr uint32_t MANDATORY_FRAME_INTERVAL_MS = 10000;  // 10 seconds
+  static constexpr uint32_t FRAME_INTERVAL_MS = 220; // SMA inhibit time of 200ms + 10% cushion
+  static constexpr uint32_t MANDATORY_FRAME_INTERVAL_MS = 7777;  // 7.7 seconds, SMA requires < 60s
 
  private:
   // Add variables to store the last known state of each sensor

@@ -105,7 +105,10 @@ class VirtualCanBms : public Component {
   bool sensor_0x035a_updated_{false};
 
   uint32_t last_frame_time_{0};
-  uint32_t last_mandatory_frame_time_{0};
+  uint32_t last_frame_0x0351_time_{0};
+  uint32_t last_frame_0x0355_time_{0};
+  uint32_t last_frame_0x0356_time_{0};
+  uint32_t last_frame_0x035a_time_{0};
 
   SmaCanMessage0x0351 last_frame_0x0351_{};
   SmaCanMessage0x0355 last_frame_0x0355_{};

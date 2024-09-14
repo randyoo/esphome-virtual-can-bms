@@ -125,7 +125,7 @@ void VirtualCanBms::loop() {
   }
 
   // Check and send 0x0356 frame
-  if (!frame_sent && (this->sensor_0x0356_updated_ || (now - this->last_frame_0x0356_time_ >= MANDATORY_FRAME_INTERVAL_MS))) {
+  if (!frame_sent && (this->sensor_0x0356_updated_ || (now - this->last_frame_0x0356_time_ >= 59000))) {
     this->send_frame_0x0356_();
     this->sensor_0x0356_updated_ = false;
     this->last_frame_0x0356_time_ = now;
@@ -133,7 +133,7 @@ void VirtualCanBms::loop() {
   }
 
   // Check and send 0x035A frame
-  if (!frame_sent && (this->sensor_0x035a_updated_ || (now - this->last_frame_0x035a_time_ >= MANDATORY_FRAME_INTERVAL_MS))) {
+  if (!frame_sent && (this->sensor_0x035a_updated_ || (now - this->last_frame_0x035a_time_ >= 59000))) {
     this->send_frame_0x035a_();
     this->sensor_0x035a_updated_ = false;
     this->last_frame_0x035a_time_ = now;

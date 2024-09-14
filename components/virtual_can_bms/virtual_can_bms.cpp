@@ -14,65 +14,126 @@ void VirtualCanBms::setup() {
 
 void VirtualCanBms::register_sensor_callbacks_() {
   if (this->charge_voltage_sensor_ != nullptr)
-    this->charge_voltage_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0351_updated_ = true; });
+    this->charge_voltage_sensor_->add_on_state_callback([this](float state) {
+      if (state != this->last_charge_voltage_) {
+        this->last_charge_voltage_ = state;
+        this->sensor_0x0351_updated_ = true;
+      }
+    });
+  
   if (this->charge_current_limit_sensor_ != nullptr)
-    this->charge_current_limit_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0351_updated_ = true; });
+    this->charge_current_limit_sensor_->add_on_state_callback([this](float state) {
+      if (state != this->last_charge_current_limit_) {
+        this->last_charge_current_limit_ = state;
+        this->sensor_0x0351_updated_ = true;
+      }
+    });
+  
   if (this->discharge_current_limit_sensor_ != nullptr)
-    this->discharge_current_limit_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0351_updated_ = true; });
+    this->discharge_current_limit_sensor_->add_on_state_callback([this](float state) {
+      if (state != this->last_discharge_current_limit_) {
+        this->last_discharge_current_limit_ = state;
+        this->sensor_0x0351_updated_ = true;
+      }
+    });
+  
   if (this->discharge_voltage_limit_sensor_ != nullptr)
-    this->discharge_voltage_limit_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0351_updated_ = true; });
-
+    this->discharge_voltage_limit_sensor_->add_on_state_callback([this](float state) {
+      if (state != this->last_discharge_voltage_limit_) {
+        this->last_discharge_voltage_limit_ = state;
+        this->sensor_0x0351_updated_ = true;
+      }
+    });
+  
   if (this->state_of_charge_sensor_ != nullptr)
-    this->state_of_charge_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0355_updated_ = true; });
+    this->state_of_charge_sensor_->add_on_state_callback([this](float state) {
+      if (state != this->last_state_of_charge_) {
+        this->last_state_of_charge_ = state;
+        this->sensor_0x0355_updated_ = true;
+      }
+    });
+  
   if (this->state_of_health_sensor_ != nullptr)
-    this->state_of_health_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0355_updated_ = true; });
+    this->state_of_health_sensor_->add_on_state_callback([this](float state) {
+      if (state != this->last_state_of_health_) {
+        this->last_state_of_health_ = state;
+        this->sensor_0x0355_updated_ = true;
+      }
+    });
+  
   if (this->hires_state_of_charge_sensor_ != nullptr)
-    this->hires_state_of_charge_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0355_updated_ = true; });
-
+    this->hires_state_of_charge_sensor_->add_on_state_callback([this](float state) {
+      if (state != this->last_hires_state_of_charge_) {
+        this->last_hires_state_of_charge_ = state;
+        this->sensor_0x0355_updated_ = true;
+      }
+    });
+  
   if (this->battery_voltage_sensor_ != nullptr)
-    this->battery_voltage_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0356_updated_ = true; });
+    this->battery_voltage_sensor_->add_on_state_callback([this](float state) {
+      if (state != this->last_battery_voltage_) {
+        this->last_battery_voltage_ = state;
+        this->sensor_0x0356_updated_ = true;
+      }
+    });
+  
   if (this->battery_current_sensor_ != nullptr)
-    this->battery_current_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0356_updated_ = true; });
+    this->battery_current_sensor_->add_on_state_callback([this](float state) {
+      if (state != this->last_battery_current_) {
+        this->last_battery_current_ = state;
+        this->sensor_0x0356_updated_ = true;
+      }
+    });
+  
   if (this->battery_temperature_sensor_ != nullptr)
-    this->battery_temperature_sensor_->add_on_state_callback([this](float state) { this->sensor_0x0356_updated_ = true; });
+    this->battery_temperature_sensor_->add_on_state_callback([this](float state) {
+      if (state != this->last_battery_temperature_) {
+        this->last_battery_temperature_ = state;
+        this->sensor_0x0356_updated_ = true;
+      }
+    });
 }
 
 void VirtualCanBms::dump_config() { ESP_LOGCONFIG(TAG, "VirtualCanBms:"); }
 
 void VirtualCanBms::loop() {
   uint32_t now = millis();
-
   if (now - this->last_frame_time_ < FRAME_INTERVAL_MS) {
     return;  // Respect minimum interval between frames
   }
 
+  bool mandatory_update = (now - this->last_mandatory_frame_time_ >= MANDATORY_FRAME_INTERVAL_MS);
+
   // Priority order: 0x0351, 0x0355, 0x0356, 0x035A
-  if (this->sensor_0x0351_updated_ || (now - this->last_mandatory_frame_time_ >= MANDATORY_FRAME_INTERVAL_MS)) {
+  if (this->sensor_0x0351_updated_ || mandatory_update) {
     this->send_frame_0x0351_();
     this->sensor_0x0351_updated_ = false;
     this->last_mandatory_frame_time_ = now;
     this->last_frame_time_ = now;
     return;
   }
-
-  if (this->sensor_0x0355_updated_ || (now - this->last_mandatory_frame_time_ >= MANDATORY_FRAME_INTERVAL_MS)) {
+  if (this->sensor_0x0355_updated_ || mandatory_update) {
     this->send_frame_0x0355_();
     this->sensor_0x0355_updated_ = false;
     this->last_mandatory_frame_time_ = now;
     this->last_frame_time_ = now;
     return;
   }
-
-  if (this->sensor_0x0356_updated_) {
+  if (this->sensor_0x0356_updated_ || mandatory_update) {
     this->send_frame_0x0356_();
     this->sensor_0x0356_updated_ = false;
+    if (mandatory_update) {
+      this->last_mandatory_frame_time_ = now;
+    }
     this->last_frame_time_ = now;
     return;
   }
-
-  if (this->sensor_0x035a_updated_) {
+  if (this->sensor_0x035a_updated_ || mandatory_update) {
     this->send_frame_0x035a_();
     this->sensor_0x035a_updated_ = false;
+    if (mandatory_update) {
+      this->last_mandatory_frame_time_ = now;
+    }
     this->last_frame_time_ = now;
     return;
   }

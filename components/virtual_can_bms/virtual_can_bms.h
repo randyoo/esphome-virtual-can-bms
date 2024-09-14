@@ -32,6 +32,22 @@ struct SmaCanMessage0x035A {
 };
 
 class VirtualCanBms : public Component {
+
+ private:
+  // Add variables to store the last known state of each sensor
+  float last_charge_voltage_ = 0;
+  float last_charge_current_limit_ = 0;
+  float last_discharge_current_limit_ = 0;
+  float last_discharge_voltage_limit_ = 0;
+  float last_state_of_charge_ = 0;
+  float last_state_of_health_ = 0;
+  float last_hires_state_of_charge_ = 0;
+  float last_battery_voltage_ = 0;
+  float last_battery_current_ = 0;
+  float last_battery_temperature_ = 0;
+
+  void register_sensor_callbacks_();
+
  public:
   void set_canbus(canbus::Canbus *canbus) { this->canbus = canbus; }
 

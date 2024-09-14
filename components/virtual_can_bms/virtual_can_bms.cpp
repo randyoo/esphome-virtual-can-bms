@@ -102,32 +102,42 @@ void VirtualCanBms::loop() {
     return;  // Respect minimum interval between frames
   }
 
-  bool mandatory_update = (now - this->last_mandatory_frame_time_ >= MANDATORY_FRAME_INTERVAL_MS);
+  bool frame_sent = false;
 
-  if (this->sensor_0x0351_updated_ || mandatory_update) {
+  // Check and send 0x0351 frame
+  if (this->sensor_0x0351_updated_ || (now - this->last_frame_0x0351_time_ >= MANDATORY_FRAME_INTERVAL_MS)) {
     this->send_frame_0x0351_();
     this->sensor_0x0351_updated_ = false;
-    this->last_frame_time_ = now;
-    return;
+    this->last_frame_0x0351_time_ = now;
+    frame_sent = true;
   }
-  if (this->sensor_0x0355_updated_ || mandatory_update) {
+
+  // Check and send 0x0355 frame
+  if (!frame_sent && (this->sensor_0x0355_updated_ || (now - this->last_frame_0x0355_time_ >= MANDATORY_FRAME_INTERVAL_MS))) {
     this->send_frame_0x0355_();
     this->sensor_0x0355_updated_ = false;
-    this->last_mandatory_frame_time_ = now;
-    this->last_frame_time_ = now;
-    return;
+    this->last_frame_0x0355_time_ = now;
+    frame_sent = true;
   }
-  if (this->sensor_0x0356_updated_) {
+
+  // Check and send 0x0356 frame
+  if (!frame_sent && (this->sensor_0x0356_updated_ || (now - this->last_frame_0x0356_time_ >= MANDATORY_FRAME_INTERVAL_MS))) {
     this->send_frame_0x0356_();
     this->sensor_0x0356_updated_ = false;
-    this->last_frame_time_ = now;
-    return;
+    this->last_frame_0x0356_time_ = now;
+    frame_sent = true;
   }
-  if (this->sensor_0x035a_updated_) {
+
+  // Check and send 0x035A frame
+  if (!frame_sent && (this->sensor_0x035a_updated_ || (now - this->last_frame_0x035a_time_ >= MANDATORY_FRAME_INTERVAL_MS))) {
     this->send_frame_0x035a_();
     this->sensor_0x035a_updated_ = false;
+    this->last_frame_0x035a_time_ = now;
+    frame_sent = true;
+  }
+
+  if (frame_sent) {
     this->last_frame_time_ = now;
-    return;
   }
 }
 

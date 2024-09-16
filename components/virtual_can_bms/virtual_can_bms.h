@@ -3,6 +3,9 @@
 #include "esphome/core/component.h"
 #include "esphome/components/canbus/canbus.h"
 #include "esphome/components/sensor/sensor.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_timer.h"
 
 namespace esphome {
 namespace virtual_can_bms {

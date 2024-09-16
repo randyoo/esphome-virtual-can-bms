@@ -121,6 +121,8 @@ class VirtualCanBms : public Component {
   static constexpr uint32_t FRAME_INTERVAL_MS = 220; // SMA inhibit time of 200ms + 10% cushion
   static constexpr uint32_t MANDATORY_FRAME_INTERVAL_MS = 7777;  // 7.7 seconds, SMA requires < 60s
 
+  bool send_frame_with_timeout_(uint32_t can_id, const std::vector<uint8_t>& data, uint32_t timeout_ms);
+
  private:
   // Add variables to store the last known state of each sensor
   float last_charge_voltage_ = 0;

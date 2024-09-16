@@ -1,6 +1,8 @@
 #include "virtual_can_bms.h"
 #include "esphome/core/log.h"
 #include "esphome/core/hal.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 namespace esphome {
 namespace virtual_can_bms {
@@ -100,6 +102,38 @@ void VirtualCanBms::register_sensor_callbacks_() {
 
 void VirtualCanBms::dump_config() { ESP_LOGCONFIG(TAG, "VirtualCanBms:"); }
 
+bool VirtualCanBms::send_frame_with_timeout_(uint32_t can_id, const std::vector<uint8_t>& data, uint32_t timeout_ms) {
+  struct SendContext {
+    esphome::canbus::Canbus* canbus;
+    uint32_t can_id;
+    std::vector<uint8_t> data;
+    bool send_complete;
+  };
+
+  SendContext ctx = {this->canbus, can_id, data, false};
+
+  TaskHandle_t task_handle = NULL;
+  xTaskCreate([](void* pvParameters) {
+    SendContext* ctx = static_cast<SendContext*>(pvParameters);
+    ctx->canbus->send_data(ctx->can_id, false, false, ctx->data);
+    ctx->send_complete = true;
+    vTaskDelete(NULL);
+  }, "can_send_task", 2048, &ctx, 1, &task_handle);
+
+  TickType_t start_time = xTaskGetTickCount();
+  while (!ctx.send_complete) {
+    if ((xTaskGetTickCount() - start_time) * portTICK_PERIOD_MS >= timeout_ms) {
+      if (task_handle != NULL) {
+        vTaskDelete(task_handle);
+      }
+      return false;
+    }
+    vTaskDelay(1);
+  }
+
+  return true;
+}
+
 void VirtualCanBms::loop() {
   uint32_t now = millis();
   if (now - this->last_frame_time_ < FRAME_INTERVAL_MS) {
@@ -145,44 +179,104 @@ void VirtualCanBms::loop() {
   }
 }
 
+// void VirtualCanBms::send_frame_0x0351_() {
+//   SmaCanMessage0x0351 message;
+//   this->build_frame_0x0351_(message);
+//   auto *ptr = reinterpret_cast<uint8_t *>(&message);
+//   this->canbus->send_data(0x0351, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
+//   this->last_frame_0x0351_ = message;
+//   this->last_frame_0x0351_time_ = millis();  // Update the timer
+//   ESP_LOGI(TAG, "Sent frame 0x0351");
+// }
+
 void VirtualCanBms::send_frame_0x0351_() {
   SmaCanMessage0x0351 message;
   this->build_frame_0x0351_(message);
   auto *ptr = reinterpret_cast<uint8_t *>(&message);
-  this->canbus->send_data(0x0351, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
-  this->last_frame_0x0351_ = message;
-  this->last_frame_0x0351_time_ = millis();  // Update the timer
-  ESP_LOGI(TAG, "Sent frame 0x0351");
+  std::vector<uint8_t> data(ptr, ptr + sizeof message);
+  
+  if (send_frame_with_timeout_(0x0351, data, 50)) {  // 50ms timeout
+    this->last_frame_0x0351_ = message;
+    this->last_frame_0x0351_time_ = millis();
+    ESP_LOGI(TAG, "Sent frame 0x0351");
+  } else {
+    ESP_LOGW(TAG, "Failed to send frame 0x0351 (timeout)");
+  }
 }
+
+// void VirtualCanBms::send_frame_0x0355_() {
+//   SmaCanMessage0x0355 message;
+//   this->build_frame_0x0355_(message);
+//   auto *ptr = reinterpret_cast<uint8_t *>(&message);
+//   this->canbus->send_data(0x0355, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
+//   this->last_frame_0x0355_ = message;
+//   this->last_frame_0x0355_time_ = millis();  // Update the timer
+//   ESP_LOGI(TAG, "Sent frame 0x0355");
+// }
+
+// void VirtualCanBms::send_frame_0x0356_() {
+//   SmaCanMessage0x0356 message;
+//   this->build_frame_0x0356_(message);
+//   auto *ptr = reinterpret_cast<uint8_t *>(&message);
+//   this->canbus->send_data(0x0356, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
+//   this->last_frame_0x0356_ = message;
+//   this->last_frame_0x0356_time_ = millis();  // Update the timer
+//   ESP_LOGI(TAG, "Sent frame 0x0356");
+// }
+
+// void VirtualCanBms::send_frame_0x035a_() {
+//   SmaCanMessage0x035A message;
+//   this->build_frame_0x035a_(message);
+//   auto *ptr = reinterpret_cast<uint8_t *>(&message);
+//   this->canbus->send_data(0x035A, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
+//   this->last_frame_0x035a_ = message;
+//   this->last_frame_0x035a_time_ = millis();  // Update the timer
+//   ESP_LOGI(TAG, "Sent frame 0x035A");
+// }
 
 void VirtualCanBms::send_frame_0x0355_() {
   SmaCanMessage0x0355 message;
   this->build_frame_0x0355_(message);
   auto *ptr = reinterpret_cast<uint8_t *>(&message);
-  this->canbus->send_data(0x0355, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
-  this->last_frame_0x0355_ = message;
-  this->last_frame_0x0355_time_ = millis();  // Update the timer
-  ESP_LOGI(TAG, "Sent frame 0x0355");
+  std::vector<uint8_t> data(ptr, ptr + sizeof message);
+  
+  if (send_frame_with_timeout_(0x0355, data, 50)) {  // 50ms timeout
+    this->last_frame_0x0355_ = message;
+    this->last_frame_0x0355_time_ = millis();
+    ESP_LOGI(TAG, "Sent frame 0x0355");
+  } else {
+    ESP_LOGW(TAG, "Failed to send frame 0x0355 (timeout)");
+  }
 }
 
 void VirtualCanBms::send_frame_0x0356_() {
   SmaCanMessage0x0356 message;
   this->build_frame_0x0356_(message);
   auto *ptr = reinterpret_cast<uint8_t *>(&message);
-  this->canbus->send_data(0x0356, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
-  this->last_frame_0x0356_ = message;
-  this->last_frame_0x0356_time_ = millis();  // Update the timer
-  ESP_LOGI(TAG, "Sent frame 0x0356");
+  std::vector<uint8_t> data(ptr, ptr + sizeof message);
+  
+  if (send_frame_with_timeout_(0x0356, data, 50)) {  // 50ms timeout
+    this->last_frame_0x0356_ = message;
+    this->last_frame_0x0356_time_ = millis();
+    ESP_LOGI(TAG, "Sent frame 0x0356");
+  } else {
+    ESP_LOGW(TAG, "Failed to send frame 0x0356 (timeout)");
+  }
 }
 
 void VirtualCanBms::send_frame_0x035a_() {
   SmaCanMessage0x035A message;
   this->build_frame_0x035a_(message);
   auto *ptr = reinterpret_cast<uint8_t *>(&message);
-  this->canbus->send_data(0x035A, false, false, std::vector<uint8_t>(ptr, ptr + sizeof message));
-  this->last_frame_0x035a_ = message;
-  this->last_frame_0x035a_time_ = millis();  // Update the timer
-  ESP_LOGI(TAG, "Sent frame 0x035A");
+  std::vector<uint8_t> data(ptr, ptr + sizeof message);
+  
+  if (send_frame_with_timeout_(0x035A, data, 50)) {  // 50ms timeout
+    this->last_frame_0x035a_ = message;
+    this->last_frame_0x035a_time_ = millis();
+    ESP_LOGI(TAG, "Sent frame 0x035A");
+  } else {
+    ESP_LOGW(TAG, "Failed to send frame 0x035A (timeout)");
+  }
 }
 
 void VirtualCanBms::build_frame_0x0351_(SmaCanMessage0x0351 &message) {

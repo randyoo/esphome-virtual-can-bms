@@ -144,6 +144,9 @@ void VirtualCanBms::loop() {
 
   // Check and send 0x0351 frame
   if (this->sensor_0x0351_updated_ || (now - this->last_frame_0x0351_time_ >= MANDATORY_FRAME_INTERVAL_MS)) {
+    if (now - this->last_frame_0x0351_time_ >= MANDATORY_FRAME_INTERVAL_MS) {
+      ESP_LOGW(TAG, "Mandatory frame time exceeded for 0x0351 frame");
+    }
     this->send_frame_0x0351_();
     this->sensor_0x0351_updated_ = false;
     this->last_frame_0x0351_time_ = now;
@@ -152,6 +155,9 @@ void VirtualCanBms::loop() {
 
   // Check and send 0x0355 frame
   if (!frame_sent && (this->sensor_0x0355_updated_ || (now - this->last_frame_0x0355_time_ >= MANDATORY_FRAME_INTERVAL_MS))) {
+    if (now - this->last_frame_0x0355_time_ >= MANDATORY_FRAME_INTERVAL_MS) {
+      ESP_LOGW(TAG, "Mandatory frame time exceeded for 0x0355 frame");
+    }
     this->send_frame_0x0355_();
     this->sensor_0x0355_updated_ = false;
     this->last_frame_0x0355_time_ = now;
@@ -160,6 +166,9 @@ void VirtualCanBms::loop() {
 
   // Check and send 0x0356 frame
   if (!frame_sent && (this->sensor_0x0356_updated_ || (now - this->last_frame_0x0356_time_ >= 59000))) {
+    if (now - this->last_frame_0x0356_time_ >= 59000) {
+      ESP_LOGW(TAG, "Mandatory frame time exceeded for 0x0356 frame");
+    }
     this->send_frame_0x0356_();
     this->sensor_0x0356_updated_ = false;
     this->last_frame_0x0356_time_ = now;
@@ -168,6 +177,9 @@ void VirtualCanBms::loop() {
 
   // Check and send 0x035A frame
   if (!frame_sent && (this->sensor_0x035a_updated_ || (now - this->last_frame_0x035a_time_ >= 59000))) {
+    if (now - this->last_frame_0x035a_time_ >= 59000) {
+      ESP_LOGW(TAG, "Mandatory frame time exceeded for 0x035A frame");
+    }
     this->send_frame_0x035a_();
     this->sensor_0x035a_updated_ = false;
     this->last_frame_0x035a_time_ = now;
@@ -178,6 +190,7 @@ void VirtualCanBms::loop() {
     this->last_frame_time_ = now;
   }
 }
+
 
 // void VirtualCanBms::send_frame_0x0351_() {
 //   SmaCanMessage0x0351 message;

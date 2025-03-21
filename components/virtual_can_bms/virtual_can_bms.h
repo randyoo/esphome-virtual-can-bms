@@ -118,8 +118,8 @@ class VirtualCanBms : public Component {
   SmaCanMessage0x0356 last_frame_0x0356_{};
   SmaCanMessage0x035A last_frame_0x035a_{};
 
-  static constexpr uint32_t FRAME_INTERVAL_MS = 220; // SMA inhibit time of 200ms + 10% cushion
-  static constexpr uint32_t MANDATORY_FRAME_INTERVAL_MS = 7777;  // 7.7 seconds, SMA requires < 60s
+  static constexpr uint32_t FRAME_INTERVAL_MS = 240; // SMA inhibit time of 200ms + 10% cushion
+  static constexpr uint32_t MANDATORY_FRAME_INTERVAL_MS = 10777;  // 10.7 seconds, SMA requires < 60s
 
   bool send_frame_with_timeout_(uint32_t can_id, const std::vector<uint8_t>& data, uint32_t timeout_ms);
 
